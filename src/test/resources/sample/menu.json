@@ -1,0 +1,44 @@
+{
+  "button": [
+    {
+      "type": "click",
+      "name": "菜单",
+      "key": "V1001_MENU"
+    },
+    {
+      "name": "下单",
+      "sub_button": [
+        {
+          "type": "click",
+          "name": "堂吃",
+          "key": "V1001_ORDER"
+        },
+        {
+          "type": "click",
+          "name": "外卖",
+          "key": "V1001_TOGO"
+        },
+        {
+          "type": "click",
+          "name": "结束下单",
+          "key": "V1001_ORDER_END"
+        }
+      ]
+    },
+    {
+      "name": "我们",
+      "sub_button": [
+        {
+          "type": "click",
+          "name": "最新鲜",
+          "key": "V1001_ORDER_END"
+        },
+        {
+          "type": "view",
+          "name": "网页",
+          "url": "http://www.moonbbs.com/thread-2041711-1-1.html"
+        }
+      ]
+    }
+  ]
+}
