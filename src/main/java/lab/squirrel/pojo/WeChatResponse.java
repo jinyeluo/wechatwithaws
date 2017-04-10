@@ -21,6 +21,6 @@ public class WeChatResponse {
     }
 
     public boolean good() {
-        return "ok".equals(errmsg);
+        return "ok".equals(errmsg) || errmsg == null;
     }
 }

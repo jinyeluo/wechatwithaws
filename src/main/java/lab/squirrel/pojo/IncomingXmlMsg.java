@@ -1,12 +1,14 @@
 package lab.squirrel.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlCData;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
 @JacksonXmlRootElement(localName = "xml")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class IncomingXmlMsg extends XmlMsg {
+    @JacksonXmlCData
     @JacksonXmlProperty(localName = "MsgId")
     private String msgId;
 

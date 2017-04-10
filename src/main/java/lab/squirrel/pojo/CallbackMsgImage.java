@@ -10,6 +10,10 @@ public class CallbackMsgImage extends CallbackMsg {
     @JacksonXmlProperty(localName = "Image")
     private List<MediaId> images;
 
+    public CallbackMsgImage() {
+        setMsgType("image");
+    }
+
     public List<MediaId> getImages() {
         return images;
     }

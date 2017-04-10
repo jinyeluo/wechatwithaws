@@ -1,44 +1,44 @@
 package lab.squirrel.function;
 
 import org.junit.Assert;
-import org.junit.Ignore;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
 public class WeChatFunctionsTest {
-    @Ignore
-    @Test
-    public void testSetMenu() throws IOException {
-        Properties p = new Properties();
-        p.load(getClass().getClassLoader().getResourceAsStream("data/appid.properties"));
-        WeChatFunctions weChatFunctions = new WeChatFunctions();
-        weChatFunctions.setConfig(p);
-        String accessToken = weChatFunctions.getAccessToken();
-        System.out.println(accessToken);
 
-        CommonFunctions commonFunctions = new CommonFunctions();
-        Map<String, Object> stringObjectMap = commonFunctions.jsonToMap(accessToken);
-        String token = String.valueOf(stringObjectMap.get("access_token"));
-//        String token = "96fRa8NBQNeTGNCx2TQL_ip725PZw_DEm9zgil24Au7ntwLax3bBGcmX3TrsSJLSIU6zMizDl2YNrCqgVQm8FvA0" +
-//            "z0cC7eaRwxxVRDhFhSyXS-yj6_3d-Z548E5LvHOBGXSdAIAJAV";
-        Map<String, String> params = new HashMap<>();
-        params.put("access_token", token);
-        String menuStr =
-            commonFunctions.inputStreamToString(getClass().getClassLoader()
-                .getResourceAsStream("sample/menu.json"));
-        String menuResp = commonFunctions.httpPostCall("https", "api.wechat.com", "/cgi-bin/menu/create", params, menuStr);
-        System.out.println(menuResp);
+    private WeChatFunctions weChatFunctions;
+
+
+    @Before
+    public void setup() throws IOException {
+        Properties p = new Properties();
+        p.load(getClass().getClassLoader().getResourceAsStream("data/app.properties"));
+        weChatFunctions = new WeChatFunctions("bucket", p, null);
     }
 
     @Test
     public void testSha1() {
         Assert.assertEquals("d0be2dc421be4fcd0172e5afceea3970e2f3d940",
-            new WeChatFunctions().sha1("apple"));
+            weChatFunctions.sha1("apple"));
     }
 
+    /**
+     * signature=1545794b584d281e5ff2bf3ad7e046365c31f422&echostr=7302992831166924722&timestamp=1491715890
+     * &nonce=760936520
+     */
+    @Test
+    public void testMessageAuthentication() {
+        HashMap<String, String[]> querystring = new HashMap<>();
+        querystring.put("signature", new String[] {"1545794b584d281e5ff2bf3ad7e046365c31f422"});
+        querystring.put("echostr", new String[] {"7302992831166924722"});
+        querystring.put("timestamp", new String[] {"1491715890"});
+        querystring.put("nonce", new String[] {"760936520"});
+        String answer = weChatFunctions.messageAuthentication(querystring, null);
+        Assert.assertEquals(querystring.get("echostr")[0], answer);
+    }
 }
 

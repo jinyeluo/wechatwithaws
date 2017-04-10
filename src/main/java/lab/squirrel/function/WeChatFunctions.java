@@ -1,54 +1,40 @@
 package lab.squirrel.function;
 
-import lab.squirrel.pojo.AccessTokenWeChatResponse;
-import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
+import lab.squirrel.pojo.AccessTokenWeChatResponse;
 
+import javax.servlet.ServletContext;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import org.apache.log4j.Logger;
 
 public class WeChatFunctions {
-    static final Logger log = Logger.getLogger(WeChatFunctions.class);
-    private final CommonFunctions commonFunctions = new CommonFunctions();
-    private  S3Functions s3Functions;
-    private Properties config;
     private static final String ACCESS_TOKEN_KEY = "workspace/access_token.properties";
+    private final CommonFunctions commonFunctions = new CommonFunctions();
+    private final String bucketName;
+    private S3Functions s3Functions;
+    private Properties config;
 
-    public WeChatFunctions() {
-    }
-
-    public void setConfig(Properties properties) {
+    public WeChatFunctions(String bucketName, Properties properties, AmazonS3 s3Client) {
+        this.bucketName = bucketName;
         config = properties;
-        s3Functions = createS3Functions();
+        s3Functions = new S3Functions(s3Client);
     }
 
-
-    protected S3Functions createS3Functions() {
-        AmazonS3 s3Client = new AmazonS3Client(new EnvironmentVariableCredentialsProvider());
-
-        return new S3Functions(s3Client);
+    protected void setS3FunctionForTesting(S3Functions s3fun) {
+        s3Functions = s3fun;
     }
 
-    public String getAccessToken() {
-        Properties accessToken = s3Functions.readS3ObjAsProperties(System.getenv(ConfigConst.S3BUCKET),
+    public String getAccessToken(ServletContext servletContext) {
+        Properties accessToken = s3Functions.readS3ObjAsProperties(bucketName,
             ACCESS_TOKEN_KEY);
 
         boolean refresh = needRefreshAccessToken(accessToken);
         if (refresh) {
-            String remoteCallContent = getTokenRemotely();
-            if (remoteCallContent.trim().isEmpty()) {
-                throw new RuntimeException("access token replied empty");
-            }
-            AccessTokenWeChatResponse accessTokenResp = commonFunctions.jsonToObj(remoteCallContent, AccessTokenWeChatResponse.class);
-            if (!accessTokenResp.good()) {
-                throw new RuntimeException("access token call failed:" + commonFunctions.objectToJson(accessTokenResp));
-            }
+            AccessTokenWeChatResponse accessTokenResp = getTokenRemote(servletContext);
             int expires_in = accessTokenResp.getExpires_in();
             accessToken.setProperty("access_token", accessTokenResp.getAccess_token());
             accessToken.setProperty("expires_at", Long.toString(System.currentTimeMillis() + expires_in * 1000));
@@ -56,10 +42,23 @@ public class WeChatFunctions {
             s3Functions.writeToS3Obj(System.getenv(ConfigConst.S3BUCKET),
                 ACCESS_TOKEN_KEY, accessTokenInStr);
 
-            log.info("access token saved");
+            log(servletContext, "access token saved");
         }
 
         return accessToken.getProperty("access_token");
+    }
+
+    public AccessTokenWeChatResponse getTokenRemote(ServletContext servletContext) {
+        String remoteCallContent = remoteGetToken(servletContext);
+        if (remoteCallContent.trim().isEmpty()) {
+            throw new RuntimeException("access token replied empty");
+        }
+        AccessTokenWeChatResponse accessTokenResp = commonFunctions.jsonToObj(remoteCallContent,
+            AccessTokenWeChatResponse.class);
+        if (!accessTokenResp.good()) {
+            throw new RuntimeException("access token call failed:" + commonFunctions.objectToJson(accessTokenResp));
+        }
+        return accessTokenResp;
     }
 
     private String getPropertyAsString(Properties prop) {
@@ -82,8 +81,8 @@ public class WeChatFunctions {
         return needRefresh;
     }
 
-    private String getTokenRemotely() {
-        log.info("get token remotely");
+    private String remoteGetToken(ServletContext servletContext) {
+        log(servletContext, "get token remotely");
         Map<String, String> params = new HashMap<>();
         params.put("grant_type", "client_credential");
         params.put("appid", config.getProperty(ConfigConst.APP_ID));
@@ -112,22 +111,36 @@ public class WeChatFunctions {
      * }
      * }
      */
-    public String messageAuthentication(Map<String, Object> querystring) {
-        String signature = String.valueOf(querystring.get("signature"));
-        String nonce = String.valueOf(querystring.get("nonce"));
-        String timestamp = String.valueOf(querystring.get("timestamp"));
-        String echostr = String.valueOf(querystring.get("echostr"));
+    public String messageAuthentication(Map<String, String[]> querystring, ServletContext servletContext) {
+        String signature = getValue(querystring.get("signature"));
+        String nonce = getValue(querystring.get("nonce"));
+        String timestamp = getValue(querystring.get("timestamp"));
+        String echostr = getValue(querystring.get("echostr"));
 
-        String token = config.getProperty(ConfigConst.TOKEN);
+        log(servletContext, new StringBuilder().append("auth:").append(signature).append(":")
+            .append(nonce).append(":").append(timestamp).append(":").append(echostr).toString());
+        String token = config.getProperty(ConfigConst.TOKEN).trim();
         String[] arr = {token, timestamp, nonce};
         Arrays.sort(arr);
         String implode = new StringBuilder().append(arr[0]).append(arr[1]).append(arr[2]).toString();
         String sha1Str = sha1(implode);
-        if  (sha1Str.equals(signature)) {
+        if (sha1Str.equals(signature)) {
             return echostr;
         } else {
-            return "verification failed";
+            return "verification failed:[" + sha1Str + "]:[" + signature + "]:[" + token + "]";
         }
+    }
+
+    private void log(ServletContext servletContext, String s) {
+        if (servletContext != null) {
+            servletContext.log(s);
+        }
+    }
+
+    private String getValue(String[] values) {
+        if (values != null && values.length > 0)
+            return values[0];
+        else return "";
     }
 
     /**

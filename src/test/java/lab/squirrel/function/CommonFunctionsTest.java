@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -23,6 +24,7 @@ public class CommonFunctionsTest {
         commonFunctions = new CommonFunctions();
     }
 
+    @Ignore
     @Test
     public void testHttpPostCall() throws Exception {
 
@@ -65,7 +67,7 @@ public class CommonFunctionsTest {
 
         msg.setMsgType("request");
         result = mapper.writeValueAsString(msg);
-        Assert.assertEquals("<xml><MsgType>request</MsgType></xml>", result);
+        Assert.assertEquals("<xml><MsgType><![CDATA[request]]></MsgType></xml>", result);
 
     }
 
@@ -81,7 +83,13 @@ public class CommonFunctionsTest {
         Assert.assertEquals(1348831860, in.getCreateTime().longValue());
         Assert.assertEquals("1234567890123456", in.getMsgId());
 
-        System.out.println(mapper.writeValueAsString(in));
+        String expect = "<xml><MsgType><![CDATA[text]]></MsgType>" +
+            "<ToUserName><![CDATA[toUser]]></ToUserName>" +
+            "<FromUserName><![CDATA[fromUser]]></FromUserName>" +
+            "<CreateTime>1348831860</CreateTime>" +
+            "<MsgId><![CDATA[1234567890123456]]></MsgId>" +
+            "<Content><![CDATA[this is a test]]></Content></xml>";
+        Assert.assertEquals(expect, mapper.writeValueAsString(in));
     }
 
 }

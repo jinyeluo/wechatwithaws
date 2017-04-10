@@ -3,6 +3,7 @@ package lab.squirrel.function;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
 
+import javax.servlet.ServletContext;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,7 +33,7 @@ public class S3Functions {
         }
     }
 
-    void writeToS3Obj(String bucket, String key, String content) {
+    public void writeToS3Obj(String bucket, String key, String content) {
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentType("text/plain");
         metadata.setContentLength(content.length());
@@ -43,15 +44,11 @@ public class S3Functions {
     }
 
     public Properties readS3ObjAsProperties(String s3bucket, String key) {
-        if (keyExists(s3bucket, key)) {
-            try {
-                try (S3Object object = s3Client.getObject(new GetObjectRequest(s3bucket, key))) {
-                    return readS3ObjAsProperties(object);
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        } else return new Properties();
+        try (S3Object object = s3Client.getObject(new GetObjectRequest(s3bucket, key))) {
+            return readS3ObjAsProperties(object);
+        } catch (IOException|AmazonS3Exception e) {
+            throw new RuntimeException("error reading " + s3bucket + ":" + key, e);
+        }
     }
 
     Properties readS3ObjAsProperties(S3Object input) {
@@ -59,20 +56,8 @@ public class S3Functions {
             Properties result = new Properties();
             result.load(new InputStreamReader(objectData));
             return result;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (IOException|AmazonS3Exception e) {
+            throw new RuntimeException("error reading s3", e);
         }
-    }
-
-    public boolean keyExists(String bucket, String key) {
-        GetObjectMetadataRequest request = new GetObjectMetadataRequest(bucket, key);
-
-        try {
-            s3Client.getObjectMetadata(request);
-        } catch (AmazonS3Exception e) {
-            return false;
-        }
-
-        return true;
     }
 }

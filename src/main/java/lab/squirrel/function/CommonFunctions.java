@@ -50,14 +50,14 @@ public class CommonFunctions {
         }
     }
 
-    protected String inputStreamToString(InputStream response) {
-        Scanner s = new Scanner(response, UTF_8).useDelimiter("\\A");
+    public String inputStreamToString(InputStream inputStream) {
+        Scanner s = new Scanner(inputStream, UTF_8).useDelimiter("\\A");
         return s.hasNext() ? s.next() : "";
     }
 
-    String httpPostCall(String scheme, String host,
-                        String path,
-                        Map<String, String> params, String content) {
+    public String httpPostCall(String scheme, String host,
+                               String path,
+                               Map<String, String> params, String content) {
         try {
             URLConnection connection = getUrlConnection(scheme, host, path, params);
 
@@ -96,7 +96,7 @@ public class CommonFunctions {
     }
 
     @SuppressWarnings("unchecked")
-    Map<String, Object> jsonToMap(String json) {
+    public Map<String, Object> jsonToMap(String json) {
         try {
             return new ObjectMapper().readValue(json, HashMap.class);
         } catch (IOException e) {

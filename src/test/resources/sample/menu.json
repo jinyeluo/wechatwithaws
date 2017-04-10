@@ -3,7 +3,7 @@
     {
       "type": "click",
       "name": "菜单",
-      "key": "V1001_MENU"
+      "key": "MN_MENU"
     },
     {
       "name": "下单",
@@ -11,17 +11,22 @@
         {
           "type": "click",
           "name": "堂吃",
-          "key": "V1001_ORDER"
+          "key": "MN_ORDER"
         },
         {
           "type": "click",
           "name": "外卖",
-          "key": "V1001_TOGO"
+          "key": "MN_TOGO"
         },
         {
           "type": "click",
-          "name": "结束下单",
-          "key": "V1001_ORDER_END"
+          "name": "下单确定",
+          "key": "MN_ORDER_CONFIRM"
+        },
+        {
+          "type": "click",
+          "name": "取消下单",
+          "key": "MN_CANCEL_ORDER"
         }
       ]
     },
@@ -31,12 +36,17 @@
         {
           "type": "click",
           "name": "最新鲜",
-          "key": "V1001_ORDER_END"
+          "key": "MN_FRESH"
         },
         {
           "type": "view",
           "name": "网页",
           "url": "http://www.moonbbs.com/thread-2041711-1-1.html"
+        },
+        {
+          "type": "click",
+          "name": "松鼠支持",
+          "url": "MN_SUPPORT"
         }
       ]
     }

@@ -1,6 +1,7 @@
 package lab.squirrel.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlCData;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
@@ -18,9 +19,12 @@ public class XmlMsg {
 </xml>
      */
     @JacksonXmlProperty(localName = "MsgType")
+    @JacksonXmlCData
     private String msgType;
+    @JacksonXmlCData
     @JacksonXmlProperty(localName = "ToUserName")
     private String toUserName;
+    @JacksonXmlCData
     @JacksonXmlProperty(localName = "FromUserName")
     private String fromUserName;
     @JacksonXmlProperty(localName = "CreateTime")

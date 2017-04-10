@@ -1,71 +1,83 @@
 package lab.squirrel.service;
 
-import lab.squirrel.bearbay.BearBayWeChatListener;
-import lab.squirrel.function.ConfigConst;
-import lab.squirrel.function.S3Functions;
-import lab.squirrel.function.WeChatListener;
-import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
-import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import lab.squirrel.bearbay.BearBayWeChatListener;
+import lab.squirrel.function.CommonFunctions;
+import lab.squirrel.function.S3Functions;
+import lab.squirrel.function.WeChatListener;
 import lab.squirrel.pojo.*;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Properties;
 
-public class SquirrelEndPoint {
+public class SquirrelEndPoint extends HttpServlet {
+    private final WeChatListener myWeChat;
+    private boolean toLog = true;
 
-    @SuppressWarnings("unchecked")
-    public String handleGetRequest(Map<String, Object> input, Context context) {
-        WeChatListener myWeChat = getWeChatListener();
-        StringBuilder b = new StringBuilder();
-        for (Map.Entry<String, Object> entry : input.entrySet()) {
-            context.getLogger().log(entry.getKey() + "->" + entry.getValue());
-        }
-
-        Map<String, Object> params = (Map<String, Object>) input.get("params");
-        if (params != null) {
-            Map<String, Object> querystring = (Map<String, Object>) params.get("querystring");
-            String verification = myWeChat.messageAuthentication(querystring);
-            context.getLogger().log(verification);
-            return verification;
-        }
-
-        return "unexpected call";
-    }
-
-    private WeChatListener getWeChatListener() {
-        AmazonS3 s3Client = new AmazonS3Client(new EnvironmentVariableCredentialsProvider());
+    public SquirrelEndPoint() {
+        AmazonS3 s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
         Properties properties = new S3Functions(s3Client).readS3ObjAsProperties(
-            System.getenv(ConfigConst.S3BUCKET), "data/app.properties");
-        WeChatListener myWeChat = new BearBayWeChatListener();
-        myWeChat.setConfig(properties);
-        return myWeChat;
+            getBucketName(), "data/app.properties");
+        myWeChat = new BearBayWeChatListener(getBucketName(), properties, s3Client);
     }
 
     @SuppressWarnings("unchecked")
-    public String handlePostRequest(Map<String, Object> input, Context context) {
-        WeChatListener myWeChat = getWeChatListener();
-        for (Map.Entry<String, Object> entry : input.entrySet()) {
-            context.getLogger().log(entry.getKey() + "->" + entry.getValue());
-        }
+    public void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException {
 
-        String requestData = String.valueOf(input.get("body-json"));
-        if (requestData != null) {
-            try {
-                String resp = handleRequest(requestData, myWeChat);
-                if (resp == null)
-                    return "service error occurred";
-                else return resp;
-            } catch (IOException e) {
-                context.getLogger().log(e.getMessage());
+        Map<String, String[]> paramMap = request.getParameterMap();
+
+        for (Map.Entry<String, String[]> entry : paramMap.entrySet()) {
+            for (String value : entry.getValue()) {
+                getServletContext().log(entry.getKey() + "=" + value);
             }
         }
 
-        return "service error occurred";
+        String verification = myWeChat.messageAuthentication(paramMap, getServletContext());
+        getServletContext().log(verification);
+
+        response.setContentType("text/plain");
+        PrintWriter out = response.getWriter();
+        out.print(verification);
+    }
+
+    protected String getBucketName() {
+        return "bearbay.svc";
+    }
+
+    @SuppressWarnings("unchecked")
+    public void doPost(HttpServletRequest request, HttpServletResponse res)
+        throws IOException, ServletException {
+        res.setContentType("application/xml; charset=UTF-8");
+        res.setCharacterEncoding("UTF-8");
+        PrintWriter out = res.getWriter();
+        String input = new CommonFunctions().inputStreamToString(request.getInputStream());
+        info(input);
+        if (input != null) {
+            try {
+                String response = handleRequest(input, myWeChat);
+                if (response == null)
+                    out.print("service error occurred");
+                else {
+                    info(response);
+                    out.print(response);
+                }
+            } catch (IOException e) {
+                getServletContext().log(e.getMessage());
+            }
+        } else
+            out.print("service error occurred");
+        out.flush();
     }
 
     private String handleRequest(String data, WeChatListener myWeChat) throws IOException {
@@ -137,5 +149,11 @@ public class SquirrelEndPoint {
         }
 
         return mapper.writeValueAsString(response);
+    }
+
+    private void info(String msg) {
+        if (toLog) {
+            log(msg);
+        }
     }
 }

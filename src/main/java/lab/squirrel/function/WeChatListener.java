@@ -2,11 +2,11 @@ package lab.squirrel.function;
 
 import lab.squirrel.pojo.CallbackMsg;
 
+import javax.servlet.ServletContext;
 import java.util.Map;
 import java.util.Properties;
 
 public interface WeChatListener {
-    void setConfig(Properties properties);
 
     /**
      * This function is called when a user sends a msg
@@ -40,9 +40,10 @@ public interface WeChatListener {
      * http://admin.wechat.com/wiki/index.php?title=Getting_Started.
      * This method is to handle that specific request.
      * @param querystring contains signature/timestamp/nonce/echostr
+     * @param servletContext
      * @return echostr
      */
-    String messageAuthentication(Map<String, Object> querystring);
+    String messageAuthentication(Map<String, String[]> querystring, ServletContext servletContext);
 
     CallbackMsg onImage(String toUserName, String mediaId, String picUrl);
 
