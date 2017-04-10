@@ -27,7 +27,7 @@ public class BearBayWeChatListener extends WeChatFunctions implements WeChatList
     @Override
     public CallbackMsg onFollowing(String userId, boolean subscribe) {
         if (subscribe) {
-            return getCallbackMsgText(userId + ":" + "欢迎，我们有最年轻的海鲜");
+            return getCallbackMsgText(userId + ":" + "欢迎, 我们有最年轻的海鲜");
         } else {
             return getCallbackMsgText(userId + ":" + "Good luck");
         }
