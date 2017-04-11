@@ -22,18 +22,27 @@ public class OrderHandlerTest {
         assertFalse(OrderHandler.ORDER_PATTERN.matcher("A#1.#1").find());
         assertFalse(OrderHandler.ORDER_PATTERN.matcher("A#1#1.0").find());
 
+        assertFalse(OrderHandler.WAIT_TIME_PATTERN.matcher("3m").find());
+
         assertTrue(OrderHandler.ORDER_PATTERN.matcher("A#1#1").find());
         assertTrue(OrderHandler.ORDER_PATTERN.matcher("A#1.5#1").find());
         assertTrue(OrderHandler.ORDER_PATTERN.matcher("A#1.5#10").find());
         assertTrue(OrderHandler.ORDER_PATTERN.matcher("A#10.5#10").find());
+
+        assertTrue(OrderHandler.WAIT_TIME_PATTERN.matcher("0H30").find());
+        assertTrue(OrderHandler.WAIT_TIME_PATTERN.matcher("0H").find());
+        assertTrue(OrderHandler.WAIT_TIME_PATTERN.matcher("3H").find());
+
     }
 
     @Test
     public void goodOrder() throws Exception {
+        StringBuilder answer = new StringBuilder();
+
         String order1 = hander.order("id1", " a#2.5 # 3", products);
         assertEquals("\uD83D\uDE1Epls use menu to select 堂吃 or 外卖", order1);
 
-        hander.newOrder("id1", Order.DINE_IN);
+        hander.newOrder("id1", Order.DINE_IN, answer);
         String order2 = hander.order("id1", " a#2.0 # 3", products);
         assertEquals("缅因大龙虾 2.0磅 辣度 3\n堂吃\n", order2);
 
@@ -44,10 +53,11 @@ public class OrderHandlerTest {
 
     @Test
     public void badOrder() throws Exception {
+        StringBuilder answer = new StringBuilder();
         String order1 = hander.order("id1", " a#2.5 # 3", products);
         assertEquals("\uD83D\uDE1Epls use menu to select 堂吃 or 外卖", order1);
 
-        hander.newOrder("id1", Order.TO_GO);
+        hander.newOrder("id1", Order.TO_GO, answer);
         hander.order("id1", " a#2.5 # 3", products);
         String order2 = hander.order("id1", " a#2.5 # 30", products);
         assertEquals("\uD83D\uDE1Espicy level can only be 1 - 10", order2);
@@ -57,33 +67,45 @@ public class OrderHandlerTest {
     }
     @Test
     public void newOrder() throws Exception {
-        String newOrder = hander.newOrder("id1", Order.DINE_IN);
-        assertEquals("龙虾热卖中", newOrder);
+        StringBuilder answer = new StringBuilder();
+
+        assertTrue(hander.newOrder("id1", Order.DINE_IN, answer));
+        assertTrue(answer.length() == 0);
     }
 
     @Test
     public void confirm() throws Exception {
-        String failed1 = hander.confirm("id1", products);
-        assertEquals("Hah???", failed1);
+        StringBuilder answer = new StringBuilder();
 
-        hander.newOrder("id1", Order.TO_GO);
-        String failed2 = hander.confirm("id1", products);
-        assertEquals("nothing to confirm", failed2);
+        assertFalse(hander.confirm("id1", products, answer));
+        assertEquals("Hah???", answer.toString());
+
+        answer.setLength(0);
+        hander.newOrder("id1", Order.TO_GO, answer);
+
+        answer.setLength(0);
+        assertFalse(hander.confirm("id1", products, answer));
+        assertEquals("nothing to confirm", answer.toString());
 
         hander.order("id1", " a#2.5 # 3", products);
         hander.order("id1", " c#2 # 1", products);
-        String confirmed = hander.confirm("id1", products);
+        answer.setLength(0);
+        assertTrue(hander.confirm("id1", products, answer));
         assertEquals("缅因大龙虾 2.5磅 辣度 3\n大虾 2磅 辣度 1\n外卖\n✔Order# 1",
-            confirmed);
+            answer.toString());
     }
 
     @Test
     public void confirmWithTime() throws Exception {
-        hander.newOrder("id1", Order.TO_GO);
-        hander.order("id1", " 2:15 ", products);
+        StringBuilder answer = new StringBuilder();
+        hander.newOrder("id1", Order.TO_GO, answer);
+        hander.order("id1", " 2h15 ", products);
+        hander.order("id1", " 0h ", products);
+        hander.order("id1", " 3h ", products);
         hander.order("id1", " c#2 # 1", products);
-        String confirmed = hander.confirm("id1", products);
-        assertTrue(confirmed.contains("取货时间"));
+        answer.setLength(0);
+        hander.confirm("id1", products, answer);
+        assertTrue(answer.toString().contains("取货时间"));
     }
 
     @Test
@@ -91,7 +113,8 @@ public class OrderHandlerTest {
         String failed = hander.cancel("id1");
         assertEquals("Hah???", failed);
 
-        hander.newOrder("id1", Order.TO_GO);
+        StringBuilder answer = new StringBuilder();
+        hander.newOrder("id1", Order.TO_GO, answer);
         String cancelled = hander.cancel("id1");
         assertEquals("cancelled", cancelled);
 

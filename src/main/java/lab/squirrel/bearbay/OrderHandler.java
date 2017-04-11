@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 public class OrderHandler {
     public static final Pattern ORDER_PATTERN = Pattern.compile("\\A([A-Z])#(\\d{1,2}(\\.\\d)?)#(\\d{1,2})\\Z");
-    public static final Pattern WAIT_TIME_PATTERN = Pattern.compile("\\A(\\d{1,2}):(\\d{1,2})\\Z");
+    public static final Pattern WAIT_TIME_PATTERN = Pattern.compile("\\A(\\d{1,2})H(\\d{1,2})?\\Z");
     static final char[] EMOJI_DISAPPOINTED = Character.toChars(128542);
     static final char[] EMOJI_CHECK = Character.toChars(0x2714);
     private int orderId = 1;
@@ -40,8 +40,8 @@ public class OrderHandler {
     private String processWaitTime(Order order, String normalizedCmd, Products products) {
         Matcher matcher = WAIT_TIME_PATTERN.matcher(normalizedCmd);
         if (matcher.find()) {
-            int hh = Integer.parseInt(matcher.group(1));
-            int mm = Integer.parseInt(matcher.group(2));
+            int hh = convertNumber(matcher.group(1));
+            int mm = convertNumber(matcher.group(2));
 
             Calendar c = Calendar.getInstance();
             c.add(Calendar.HOUR, hh);
@@ -51,6 +51,14 @@ public class OrderHandler {
             return order.printItems(products);
         } else
             return null;
+    }
+
+    private int convertNumber(String hours) {
+        int hh = 0;
+        if (hours != null && !hours.isEmpty()) {
+            hh = Integer.parseInt(hours);
+        }
+        return hh;
     }
 
     private String processOrder(Products products, Order order, String src) {
@@ -78,27 +86,28 @@ public class OrderHandler {
         return new StringBuilder().append(EMOJI_DISAPPOINTED).append(str).toString();
     }
 
-    public String newOrder(String userId, String dineInOrTogo) throws OrderHandlerException {
+    public boolean newOrder(String userId, String dineInOrTogo, StringBuilder answer) throws OrderHandlerException {
         Order order = orders.get(userId);
         if (order == null) {
             Order newOrder = new Order();
             newOrder.setType(dineInOrTogo);
             orders.put(userId, newOrder);
-            return getOrderSample();
-        } else return "order exists";
+            return true;
+        } else {
+            answer.append("order exists");
+            return false;
+        }
     }
 
-    private String getOrderSample() {
-        return "龙虾热卖中";
-    }
-
-    public String confirm(String userId, Products products) {
+    public boolean confirm(String userId, Products products, StringBuilder answer) {
         Order order = orders.get(userId);
         if (order == null) {
-            return "Hah???";
+            answer.append("Hah???");
+            return false;
         } else {
             if (order.getItems().isEmpty()) {
-                return "nothing to confirm";
+                answer.append("nothing to confirm");
+                return false;
             }
             String productDesc = order.printItems(products);
             int confirmedId = orderId++;
@@ -106,8 +115,9 @@ public class OrderHandler {
                 orderId = 1;
             }
             orders.remove(userId);
-            return new StringBuilder().append(productDesc)
-                .append(EMOJI_CHECK).append("Order# ").append(confirmedId).toString();
+            answer.append(productDesc)
+                .append(EMOJI_CHECK).append("Order# ").append(confirmedId);
+            return true;
         }
     }
 

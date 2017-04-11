@@ -2,10 +2,7 @@ package lab.squirrel.bearbay;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.TimeZone;
+import java.util.*;
 
 public class Order {
     public final static String DINE_IN = "1";
@@ -17,7 +14,7 @@ public class Order {
     private final DateFormat format;
 
     public Order() {
-        format = new SimpleDateFormat("M/dd hh:mm");
+        format = new SimpleDateFormat("M/dd HH:mm");
         format.setTimeZone(TimeZone.getTimeZone("America/Chicago"));
     }
 

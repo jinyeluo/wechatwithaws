@@ -6,12 +6,11 @@ import lab.squirrel.function.WeChatListener;
 import lab.squirrel.pojo.CallbackMsg;
 import lab.squirrel.pojo.CallbackMsgText;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
 
 public class BearBayWeChatListener extends WeChatFunctions implements WeChatListener {
     private OrderHandler orderHandler = new OrderHandler();
+
     public BearBayWeChatListener(String bucketName, Properties properties, AmazonS3 s3Client) {
         super(bucketName, properties, s3Client);
     }
@@ -47,21 +46,16 @@ public class BearBayWeChatListener extends WeChatFunctions implements WeChatList
                 return getCallbackMsgText(getProducts());
 
             case "MN_ORDER":
-                try {
-                    return getCallbackMsgText(orderHandler.newOrder(userId, Order.DINE_IN));
-                } catch (OrderHandlerException e) {
-                    return getCallbackMsgText(e.getMessage());
-                }
+                return onNewOrder(userId, Order.DINE_IN);
 
             case "MN_TOGO":
-                try {
-                    return getCallbackMsgText(orderHandler.newOrder(userId, Order.TO_GO));
-                } catch (OrderHandlerException e) {
-                    return getCallbackMsgText(e.getMessage());
-                }
+                return onNewOrder(userId, Order.TO_GO);
 
-            case "MN_CONFRM":
-                return getCallbackMsgText(orderHandler.confirm(userId, products()));
+            case "MN_CONFRM": {
+                StringBuilder answer = new StringBuilder();
+                boolean success = orderHandler.confirm(userId, products(), answer);
+                return getCallbackMsgText(answer.toString());
+            }
 
             case "MN_CANCEL":
                 return getCallbackMsgText(orderHandler.cancel(userId));
@@ -77,8 +71,21 @@ public class BearBayWeChatListener extends WeChatFunctions implements WeChatList
         return getCallbackMsgText("sorry, I don't understand");
     }
 
+    private CallbackMsg onNewOrder(String userId, String dineType) {
+        try {
+            StringBuilder answer = new StringBuilder();
+            boolean success = orderHandler.newOrder(userId, dineType, answer);
+            if (success)
+                return getCallbackMsgText(getMenu());
+            else
+                return getCallbackMsgText(answer.toString());
+        } catch (OrderHandlerException e) {
+            return getCallbackMsgText(e.getMessage());
+        }
+    }
+
     private String getMenu() {
-        return "龙虾热卖中。。。\n" +
+        return getWhatIsHot() +
             "A 缅因大龙虾\n" +
             "B 路易斯安那小龙虾\n" +
             "C 大虾\n" +
@@ -86,12 +93,16 @@ public class BearBayWeChatListener extends WeChatFunctions implements WeChatList
             "E 维吉尼亚活花蛤\n" +
             "F 地中海活青口\n" +
             "G 新西兰青口\n" +
-            "格式：菜号（A-C）#份量（1-10）#辣度（1-10)\n" +
-            "例子 路易斯安那小龙虾五磅，辣度三，\n" +
+            "格式：菜号（A-G）#份量（1-10）#辣度（1-10)\n" +
+            "例如 路易斯安那小龙虾五磅，辣度三，\n" +
             "请回复  B#5#3\n" +
             "一个回复选一个菜式。可多次回复。\n" +
-            "如预订，请回复 *等待* 时间。\n形式: “小时：分钟”。 \n比如等半小时“0：30”，或三小时“3：0”\n" +
-            "最后选用菜单“下单确定”完成。";
+            "如预订，请回复 *等待* 时间。\n形式: “小时h分钟”。 \n比如等半小时“0h30”，或三小时“3h”\n" +
+            "最后选用菜单“确定”完成。";
+    }
+
+    private String getWhatIsHot() {
+        return "龙虾热卖中。。。\n";
     }
 
     private String getProducts() {
