@@ -20,13 +20,13 @@
         },
         {
           "type": "click",
-          "name": "下单确定",
-          "key": "MN_ORDER_CONFIRM"
+          "name": "确定",
+          "key": "MN_CONFRM"
         },
         {
           "type": "click",
-          "name": "取消下单",
-          "key": "MN_CANCEL_ORDER"
+          "name": "取消",
+          "key": "MN_CANCEL"
         }
       ]
     },
@@ -46,7 +46,7 @@
         {
           "type": "click",
           "name": "松鼠支持",
-          "url": "MN_SUPPORT"
+          "key": "MN_SUPPORT"
         }
       ]
     }
