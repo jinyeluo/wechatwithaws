@@ -23,12 +23,15 @@ import java.util.Properties;
 public class SquirrelEndPoint extends HttpServlet {
     private final WeChatListener myWeChat;
     private boolean toLog = true;
+    private RRHistoryCache rrHistoryCache;
 
     public SquirrelEndPoint() {
         AmazonS3 s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
         Properties properties = new S3Functions(s3Client).readS3ObjAsProperties(
             getBucketName(), "data/app.properties");
+
         myWeChat = new BearBayWeChatListener(getBucketName(), properties, s3Client);
+        rrHistoryCache = new RRHistoryCache();
     }
 
     @SuppressWarnings("unchecked")
@@ -83,12 +86,28 @@ public class SquirrelEndPoint extends HttpServlet {
     private String handleRequest(String data, WeChatListener myWeChat) throws IOException {
         XmlMapper mapper = new XmlMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-        XmlMsg in = mapper.readValue(data, XmlMsg.class);
+        IncomingXmlMsg in = mapper.readValue(data, IncomingXmlMsg.class);
         if (in == null || in.getMsgType() == null) {
             return null;
         }
 
-        CallbackMsg response = null;
+        CallbackMsg response = checkHistoryCache(in);
+        if (response == null) {
+            response = processInMsg(data, myWeChat, mapper, in, response);
+            cacheInOutMsg(in, response);
+        }
+        return mapper.writeValueAsString(response);
+    }
+
+    private void cacheInOutMsg(IncomingXmlMsg in, CallbackMsg response) {
+        rrHistoryCache.put(in, response);
+    }
+
+    private CallbackMsg checkHistoryCache(IncomingXmlMsg in) {
+        return rrHistoryCache.get(in);
+    }
+
+    private CallbackMsg processInMsg(String data, WeChatListener myWeChat, XmlMapper mapper, XmlMsg in, CallbackMsg response) throws IOException {
         switch (in.getMsgType().toLowerCase()) {
             case "text":
                 InComingMsgText inComingMsgText = mapper.readValue(data, InComingMsgText.class);
@@ -147,8 +166,7 @@ public class SquirrelEndPoint extends HttpServlet {
             response.setFromUserName(in.getToUserName());
             response.setCreateTime(System.currentTimeMillis());
         }
-
-        return mapper.writeValueAsString(response);
+        return response;
     }
 
     private void info(String msg) {
