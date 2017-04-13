@@ -1,6 +1,5 @@
 package lab.squirrel.service;
 
-import com.amazonaws.services.s3.AmazonS3;
 import lab.squirrel.function.CommonFunctions;
 import lab.squirrel.function.S3Functions;
 import lab.squirrel.function.WeChatFunctions;
@@ -9,8 +8,8 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import javax.servlet.ServletContext;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -47,14 +46,30 @@ public class LiveCalls {
         String menuStr =
             commonFunctions.inputStreamToString(getClass().getClassLoader()
                 .getResourceAsStream("sample/menu.json"));
-        String menuResp = commonFunctions.httpPostCall("https", "api.wechat.com",
+        String menuResp = commonFunctions.httpPostTxCall("https", "api.wechat.com",
             "/cgi-bin/menu/create", params, menuStr);
+        System.out.println(menuResp);
+    }
+
+    @Ignore
+    @Test
+    public void testUploadingImage() throws IOException {
+        String accessToken = weChatFunctions.getAccessToken(null);
+        System.out.println(accessToken);
+
+        CommonFunctions commonFunctions = new CommonFunctions();
+        Map<String, String> params = new HashMap<>();
+        params.put("access_token", accessToken);
+        params.put("type", "image");
+        //curl -F media=@test.jpg "http://file.api.wechat.com/cgi-bin/media/upload?access_token=ACCESS_TOKEN&type=TYPE"
+        InputStream in = getClass().getClassLoader().getResourceAsStream("image/testsample.jpg");
+        String menuResp = commonFunctions.httpPostBinaryCall("http", "file.api.wechat.com",
+            "/cgi-bin/media/upload", params, "testsample.jpg", in);
         System.out.println(menuResp);
     }
 
     private class MyWeChatFunctions extends WeChatFunctions {
         public MyWeChatFunctions(Properties p) {
-            super("dummyBucket", p, null);
             setS3FunctionForTesting(new MyS3Function());
         }
     }

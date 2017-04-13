@@ -17,7 +17,8 @@ public class WeChatFunctionsTest {
     public void setup() throws IOException {
         Properties p = new Properties();
         p.load(getClass().getClassLoader().getResourceAsStream("data/app.properties"));
-        weChatFunctions = new WeChatFunctions("bucket", p, null);
+        weChatFunctions = new WeChatFunctions();
+        weChatFunctions.setConfig(p);
     }
 
     @Test

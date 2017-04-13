@@ -1,13 +1,9 @@
 package lab.squirrel.service;
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import lab.squirrel.bearbay.BearBayWeChatListener;
 import lab.squirrel.function.CommonFunctions;
-import lab.squirrel.function.S3Functions;
 import lab.squirrel.function.WeChatListener;
 import lab.squirrel.pojo.*;
 
@@ -18,7 +14,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Map;
-import java.util.Properties;
 
 public class SquirrelEndPoint extends HttpServlet {
     private final WeChatListener myWeChat;
@@ -26,11 +21,7 @@ public class SquirrelEndPoint extends HttpServlet {
     private RRHistoryCache rrHistoryCache;
 
     public SquirrelEndPoint() {
-        AmazonS3 s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
-        Properties properties = new S3Functions(s3Client).readS3ObjAsProperties(
-            getBucketName(), "data/app.properties");
-
-        myWeChat = new BearBayWeChatListener(getBucketName(), properties, s3Client);
+        myWeChat = new BearBayWeChatListener();
         rrHistoryCache = new RRHistoryCache();
     }
 
@@ -52,10 +43,6 @@ public class SquirrelEndPoint extends HttpServlet {
         response.setContentType("text/plain");
         PrintWriter out = response.getWriter();
         out.print(verification);
-    }
-
-    protected String getBucketName() {
-        return "bearbay.svc";
     }
 
     @SuppressWarnings("unchecked")

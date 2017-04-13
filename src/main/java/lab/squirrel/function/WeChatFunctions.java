@@ -1,6 +1,8 @@
 package lab.squirrel.function;
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
 import lab.squirrel.pojo.AccessTokenWeChatResponse;
 
 import javax.servlet.ServletContext;
@@ -13,15 +15,25 @@ import java.util.*;
 
 public class WeChatFunctions {
     private static final String ACCESS_TOKEN_KEY = "workspace/access_token.properties";
-    private final CommonFunctions commonFunctions = new CommonFunctions();
-    private final String bucketName;
+
+    private CommonFunctions commonFunctions = new CommonFunctions();
+    private String bucketName;
     private S3Functions s3Functions;
     private Properties config;
 
-    public WeChatFunctions(String bucketName, Properties properties, AmazonS3 s3Client) {
+    public WeChatFunctions() {
+    }
+
+    protected void config(String bucketName) {
         this.bucketName = bucketName;
-        config = properties;
+        AmazonS3 s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
+        config = new S3Functions(s3Client).readS3ObjAsProperties(
+            bucketName, "data/app.properties");
         s3Functions = new S3Functions(s3Client);
+    }
+
+    public void setConfig(Properties p) {
+        config = p;
     }
 
     protected void setS3FunctionForTesting(S3Functions s3fun) {

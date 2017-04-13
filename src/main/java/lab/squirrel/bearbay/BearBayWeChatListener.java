@@ -11,9 +11,15 @@ import java.util.Properties;
 public class BearBayWeChatListener extends WeChatFunctions implements WeChatListener {
     private OrderHandler orderHandler = new OrderHandler();
 
-    public BearBayWeChatListener(String bucketName, Properties properties, AmazonS3 s3Client) {
-        super(bucketName, properties, s3Client);
+    public BearBayWeChatListener() {
+        super();
+        config(getBucketName());
     }
+
+    public String getBucketName() {
+        return "bearbay.svc";
+    }
+
 
     @Override
     public CallbackMsg onText(String userId, String msg) {
