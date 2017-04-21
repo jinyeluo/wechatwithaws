@@ -1,12 +1,14 @@
 package lab.squirrel.function;
 
 import lab.squirrel.pojo.CallbackMsg;
+import lab.squirrel.service.SquirrelEndPoint;
 
 import javax.servlet.ServletContext;
 import java.util.Map;
 import java.util.Properties;
 
 public interface WeChatListener {
+    void setup(SquirrelEndPoint squirrelEndPoint);
 
     /**
      * This function is called when a user sends a msg

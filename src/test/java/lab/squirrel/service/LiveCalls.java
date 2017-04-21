@@ -1,7 +1,7 @@
 package lab.squirrel.service;
 
 import lab.squirrel.function.CommonFunctions;
-import lab.squirrel.function.S3Functions;
+import lab.squirrel.function.DataStorage;
 import lab.squirrel.function.WeChatFunctions;
 import lab.squirrel.pojo.AccessTokenWeChatResponse;
 import org.junit.Before;
@@ -20,9 +20,7 @@ public class LiveCalls {
 
     @Before
     public void setup() throws IOException {
-        Properties p = new Properties();
-        p.load(getClass().getClassLoader().getResourceAsStream("data/app.properties"));
-        weChatFunctions = new MyWeChatFunctions(p);
+        weChatFunctions = new MyWeChatFunctions();
     }
 
     @Ignore
@@ -69,23 +67,27 @@ public class LiveCalls {
     }
 
     private class MyWeChatFunctions extends WeChatFunctions {
-        public MyWeChatFunctions(Properties p) {
-            setS3FunctionForTesting(new MyS3Function());
+        public MyWeChatFunctions() {
+            super("test", new MyDataStorage());
         }
     }
 
-    private class MyS3Function extends S3Functions {
-        public MyS3Function() {
-            super(null);
+    private class MyDataStorage implements DataStorage {
+        public MyDataStorage() {
         }
 
         @Override
-        public Properties readS3ObjAsProperties(String s3bucket, String key) {
+        public Properties readAsProperties(String bucket, String key) {
             return new Properties();
         }
 
         @Override
-        public void writeToS3Obj(String bucket, String key, String content) {
+        public String readAsStr(String bucket, String key) {
+            return null;
+        }
+
+        @Override
+        public void write(String bucket, String key, String content) {
         }
     }
 }

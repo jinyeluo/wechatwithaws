@@ -1,8 +1,5 @@
 package lab.squirrel.function;
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import lab.squirrel.pojo.AccessTokenWeChatResponse;
 
 import javax.servlet.ServletContext;
@@ -18,31 +15,18 @@ public class WeChatFunctions {
 
     private CommonFunctions commonFunctions = new CommonFunctions();
     private String bucketName;
-    private S3Functions s3Functions;
+    private DataStorage dataStorage;
     private Properties config;
 
-    public WeChatFunctions() {
-    }
-
-    protected void config(String bucketName) {
+    public WeChatFunctions(String bucketName, DataStorage dataStorage) {
         this.bucketName = bucketName;
-        AmazonS3 s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
-        config = new S3Functions(s3Client).readS3ObjAsProperties(
+        this.dataStorage = dataStorage;
+        config = dataStorage.readAsProperties(
             bucketName, "data/app.properties");
-        s3Functions = new S3Functions(s3Client);
-    }
-
-    public void setConfig(Properties p) {
-        config = p;
-    }
-
-    protected void setS3FunctionForTesting(S3Functions s3fun) {
-        s3Functions = s3fun;
     }
 
     public String getAccessToken(ServletContext servletContext) {
-        Properties accessToken = s3Functions.readS3ObjAsProperties(bucketName,
-            ACCESS_TOKEN_KEY);
+        Properties accessToken = dataStorage.readAsProperties(bucketName, ACCESS_TOKEN_KEY);
 
         boolean refresh = needRefreshAccessToken(accessToken);
         if (refresh) {
@@ -51,7 +35,7 @@ public class WeChatFunctions {
             accessToken.setProperty("access_token", accessTokenResp.getAccess_token());
             accessToken.setProperty("expires_at", Long.toString(System.currentTimeMillis() + expires_in * 1000));
             String accessTokenInStr = getPropertyAsString(accessToken);
-            s3Functions.writeToS3Obj(System.getenv(ConfigConst.S3BUCKET),
+            dataStorage.write(System.getenv(ConfigConst.S3BUCKET),
                 ACCESS_TOKEN_KEY, accessTokenInStr);
 
             log(servletContext, "access token saved");

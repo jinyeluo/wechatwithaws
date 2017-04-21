@@ -2,7 +2,6 @@ package lab.squirrel.service;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import lab.squirrel.bearbay.BearBayWeChatListener;
 import lab.squirrel.function.CommonFunctions;
 import lab.squirrel.function.WeChatListener;
 import lab.squirrel.pojo.*;
@@ -16,15 +15,28 @@ import java.io.PrintWriter;
 import java.util.Map;
 
 public class SquirrelEndPoint extends HttpServlet {
-    private final WeChatListener myWeChat;
-    private boolean toLog = true;
+    private WeChatListener weChat;
+    private boolean toLog = false;
     private RRHistoryCache rrHistoryCache;
 
     public SquirrelEndPoint() {
-        myWeChat = new BearBayWeChatListener();
+        String listenerImpl = this.getInitParameter("ListenerImpl");
+        try {
+            weChat = (WeChatListener) Class.forName(listenerImpl).newInstance();
+            weChat.setup(this);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         rrHistoryCache = new RRHistoryCache();
     }
 
+    public void setToLog(boolean toLog) {
+        this.toLog = toLog;
+    }
+
+    /**
+     * "get" will be called only during verification
+     */
     @SuppressWarnings("unchecked")
     public void doGet(HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException {
@@ -37,7 +49,7 @@ public class SquirrelEndPoint extends HttpServlet {
             }
         }
 
-        String verification = myWeChat.messageAuthentication(paramMap, getServletContext());
+        String verification = weChat.messageAuthentication(paramMap, getServletContext());
         getServletContext().log(verification);
 
         response.setContentType("text/plain");
@@ -55,7 +67,7 @@ public class SquirrelEndPoint extends HttpServlet {
         info(input);
         if (input != null) {
             try {
-                String response = handleRequest(input, myWeChat);
+                String response = handleRequest(input, weChat);
                 if (response == null)
                     out.print("service error occurred");
                 else {
@@ -80,7 +92,7 @@ public class SquirrelEndPoint extends HttpServlet {
 
         CallbackMsg response = checkHistoryCache(in);
         if (response == null) {
-            response = processInMsg(data, myWeChat, mapper, in, response);
+            response = processInMsg(data, myWeChat, mapper, in);
             cacheInOutMsg(in, response);
         }
         return mapper.writeValueAsString(response);
@@ -94,7 +106,10 @@ public class SquirrelEndPoint extends HttpServlet {
         return rrHistoryCache.get(in);
     }
 
-    private CallbackMsg processInMsg(String data, WeChatListener myWeChat, XmlMapper mapper, XmlMsg in, CallbackMsg response) throws IOException {
+    private CallbackMsg processInMsg(String data, WeChatListener myWeChat, XmlMapper mapper, XmlMsg in)
+        throws IOException {
+        CallbackMsg response = null;
+
         switch (in.getMsgType().toLowerCase()) {
             case "text":
                 InComingMsgText inComingMsgText = mapper.readValue(data, InComingMsgText.class);

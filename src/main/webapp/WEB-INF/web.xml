@@ -22,13 +22,29 @@
          version="3.1"
          metadata-complete="true">
     <servlet>
-        <servlet-name>bearbayServlet</servlet-name>
+        <servlet-name>sampleServlet</servlet-name>
         <servlet-class>lab.squirrel.service.SquirrelEndPoint</servlet-class>
+        <init-param>
+            <!--Your class implementing WeChatListener-->
+            <param-name>ListenerImpl</param-name>
+            <param-value>lab.squirrel.sample.SampleWeChatListener</param-value>
+        </init-param>
+        <init-param>
+            <param-name>dataStorage</param-name>
+            <param-value>Local</param-value>
+            <!--<param-value>S3</param-value>-->
+        </init-param>
+        <init-param>
+            <param-name>Bucket</param-name>
+            <param-value>/temp</param-value>
+            <!--<param-value>wechataws.svc</param-value>-->
+        </init-param>
+        <load-on-startup>1</load-on-startup>
     </servlet>
 
     <servlet-mapping>
-        <servlet-name>bearbayServlet</servlet-name>
-        <url-pattern>/bearbay</url-pattern>
+        <servlet-name>sampleServlet</servlet-name>
+        <url-pattern>/sample</url-pattern>
     </servlet-mapping>
 
 </web-app>

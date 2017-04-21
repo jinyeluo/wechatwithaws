@@ -1,9 +1,6 @@
 package lab.squirrel.offline;
 
-import lab.squirrel.bearbay.BearBayWeChatListener;
-import lab.squirrel.function.CommonFunctions;
-import lab.squirrel.function.S3Functions;
-import lab.squirrel.function.WeChatFunctions;
+import lab.squirrel.function.*;
 import lab.squirrel.pojo.AccessTokenWeChatResponse;
 
 import java.io.*;
@@ -25,9 +22,7 @@ public class LoadImage {
 
     private static void process(String imageFileDir, Properties p){
 
-        BearBayWeChatListener weChatFun = new BearBayWeChatListener();
-        String bucket = weChatFun.getBucketName();
-        weChatFun.setConfig(p);
+        WeChatFunctions weChatFun = new WeChatFunctions("test", new ClasspathStorage());
         AccessTokenWeChatResponse accessToken = weChatFun.getTokenRemote(null);
 
         if (!accessToken.good())
@@ -50,18 +45,18 @@ public class LoadImage {
         }
     }
 
-    private class MyS3Function extends S3Functions {
+    private class MyS3Function extends S3Storage {
         public MyS3Function() {
             super(null);
         }
 
         @Override
-        public Properties readS3ObjAsProperties(String s3bucket, String key) {
+        public Properties readAsProperties(String bucket, String key) {
             return new Properties();
         }
 
         @Override
-        public void writeToS3Obj(String bucket, String key, String content) {
+        public void write(String bucket, String key, String content) {
         }
     }
 
